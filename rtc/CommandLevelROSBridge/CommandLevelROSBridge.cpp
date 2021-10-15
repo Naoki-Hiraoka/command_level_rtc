@@ -9,7 +9,7 @@
 
 CommandLevelROSBridge::CommandLevelROSBridge(RTC::Manager* manager):
   RTC::DataFlowComponentBase(manager),
-  m_qIn_("qRefIn", m_q_),
+  m_qIn_("qIn", m_q_),
   m_basePoseIn_("basePoseIn", m_basePose_)
 {
 }
@@ -52,7 +52,7 @@ RTC::ReturnCode_t CommandLevelROSBridge::onExecute(RTC::UniqueId ec_id){
     geometry_msgs::TransformStamped transformStamped;
     transformStamped.header.stamp = ros::Time::now();
     transformStamped.header.frame_id = "/hrpsys/odom";
-    transformStamped.child_frame_id = robot_urdf_->getRoot()->name;
+    transformStamped.child_frame_id = "/hrpsys/" + robot_urdf_->getRoot()->name;
     transformStamped.transform.translation.x = m_basePose_.data.position.x;
     transformStamped.transform.translation.y = m_basePose_.data.position.y;
     transformStamped.transform.translation.z = m_basePose_.data.position.z;
