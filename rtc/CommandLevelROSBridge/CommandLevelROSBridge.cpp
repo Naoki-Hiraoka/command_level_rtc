@@ -33,6 +33,10 @@ RTC::ReturnCode_t CommandLevelROSBridge::onInitialize(){
   this->robot_urdf_->initParam("robot_description");
 
   ros::NodeHandle pnh("~");
+
+  if(pnh.hasParam("tf_prefix")) pnh.getParam("tf_prefix", this->tf_prefix_);
+  if(this->tf_prefix_ != "") this->tf_prefix_ = "/" + this->tf_prefix_ + "/";
+
   jointStatePub_ = pnh.advertise<sensor_msgs::JointState>("output", 1);
 
   return RTC::RTC_OK;
@@ -42,6 +46,7 @@ RTC::ReturnCode_t CommandLevelROSBridge::onExecute(RTC::UniqueId ec_id){
   //ros::spinOnce();
 
   if(this->m_basePoseIn_.isNew()){
+    this->m_basePoseIn_.read();
     robot_vrml_->rootLink()->p()[0] = m_basePose_.data.position.x;
     robot_vrml_->rootLink()->p()[1] = m_basePose_.data.position.y;
     robot_vrml_->rootLink()->p()[2] = m_basePose_.data.position.z;
@@ -51,8 +56,8 @@ RTC::ReturnCode_t CommandLevelROSBridge::onExecute(RTC::UniqueId ec_id){
 
     geometry_msgs::TransformStamped transformStamped;
     transformStamped.header.stamp = ros::Time::now();
-    transformStamped.header.frame_id = "/hrpsys/odom";
-    transformStamped.child_frame_id = "/hrpsys/" + robot_urdf_->getRoot()->name;
+    transformStamped.header.frame_id = this->tf_prefix_ + "odom";
+    transformStamped.child_frame_id = this->tf_prefix_ + robot_urdf_->getRoot()->name;
     transformStamped.transform.translation.x = m_basePose_.data.position.x;
     transformStamped.transform.translation.y = m_basePose_.data.position.y;
     transformStamped.transform.translation.z = m_basePose_.data.position.z;
@@ -87,8 +92,8 @@ RTC::ReturnCode_t CommandLevelROSBridge::onExecute(RTC::UniqueId ec_id){
 
     geometry_msgs::TransformStamped transformStamped;
     transformStamped.header.stamp = ros::Time::now();
-    transformStamped.header.frame_id = "/hrpsys/odom";
-    transformStamped.child_frame_id =  "/hrpsys/com";
+    transformStamped.header.frame_id = this->tf_prefix_+"odom";
+    transformStamped.child_frame_id = this->tf_prefix_+"com";
     transformStamped.transform.translation.x = robot_vrml_->centerOfMass()[0];
     transformStamped.transform.translation.y = robot_vrml_->centerOfMass()[1];
     transformStamped.transform.translation.z = robot_vrml_->centerOfMass()[2];

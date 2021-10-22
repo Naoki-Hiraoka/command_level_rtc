@@ -27,6 +27,7 @@ protected:
   ros::Publisher jointStatePub_;
   tf2_ros::TransformBroadcaster br;
 
+  std::string tf_prefix_;
 public:
   CommandLevelROSBridge(RTC::Manager* manager);
   virtual RTC::ReturnCode_t onInitialize();
