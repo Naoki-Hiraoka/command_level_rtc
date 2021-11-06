@@ -16,4 +16,5 @@
   <depend>urdf</depend>
   <depend>tf2_ros</depend>
   <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
 </package>

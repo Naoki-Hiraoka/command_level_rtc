@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   tf2_ros
   geometry_msgs
+  nav_msgs
   urdf)
 find_package(choreonoid REQUIRED)
 

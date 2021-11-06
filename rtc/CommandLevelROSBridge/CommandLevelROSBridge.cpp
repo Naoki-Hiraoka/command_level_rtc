@@ -6,6 +6,7 @@
 
 #include <geometry_msgs/TransformStamped.h>
 #include <sensor_msgs/JointState.h>
+#include <nav_msgs/Odometry.h>
 
 CommandLevelROSBridge::CommandLevelROSBridge(RTC::Manager* manager):
   RTC::DataFlowComponentBase(manager),
@@ -37,7 +38,8 @@ RTC::ReturnCode_t CommandLevelROSBridge::onInitialize(){
   if(pnh.hasParam("tf_prefix")) pnh.getParam("tf_prefix", this->tf_prefix_);
   if(this->tf_prefix_ != "") this->tf_prefix_ = "/" + this->tf_prefix_ + "/";
 
-  jointStatePub_ = pnh.advertise<sensor_msgs::JointState>("output", 1);
+  odomPub_ = pnh.advertise<nav_msgs::Odometry>("odom", 1);
+  jointStatePub_ = pnh.advertise<sensor_msgs::JointState>("joint_state", 1);
 
   return RTC::RTC_OK;
 }
@@ -54,23 +56,63 @@ RTC::ReturnCode_t CommandLevelROSBridge::onExecute(RTC::UniqueId ec_id){
                                                      m_basePose_.data.orientation.p,
                                                      m_basePose_.data.orientation.y);
 
-    geometry_msgs::TransformStamped transformStamped;
-    transformStamped.header.stamp = ros::Time::now();
-    transformStamped.header.frame_id = this->tf_prefix_ + "odom";
-    transformStamped.child_frame_id = this->tf_prefix_ + robot_urdf_->getRoot()->name;
-    transformStamped.transform.translation.x = m_basePose_.data.position.x;
-    transformStamped.transform.translation.y = m_basePose_.data.position.y;
-    transformStamped.transform.translation.z = m_basePose_.data.position.z;
-    tf2::Quaternion q;
-    q.setRPY(m_basePose_.data.orientation.r,
-             m_basePose_.data.orientation.p,
-             m_basePose_.data.orientation.y);
-    transformStamped.transform.rotation.x = q.x();
-    transformStamped.transform.rotation.y = q.y();
-    transformStamped.transform.rotation.z = q.z();
-    transformStamped.transform.rotation.w = q.w();
+    {
+      geometry_msgs::TransformStamped transformStamped;
+      transformStamped.header.stamp = ros::Time::now();
+      transformStamped.header.frame_id = this->tf_prefix_ + "odom";
+      transformStamped.child_frame_id = this->tf_prefix_ + robot_urdf_->getRoot()->name;
+      transformStamped.transform.translation.x = m_basePose_.data.position.x;
+      transformStamped.transform.translation.y = m_basePose_.data.position.y;
+      transformStamped.transform.translation.z = m_basePose_.data.position.z;
+      tf2::Quaternion q;
+      q.setRPY(m_basePose_.data.orientation.r,
+               m_basePose_.data.orientation.p,
+               m_basePose_.data.orientation.y);
+      transformStamped.transform.rotation.x = q.x();
+      transformStamped.transform.rotation.y = q.y();
+      transformStamped.transform.rotation.z = q.z();
+      transformStamped.transform.rotation.w = q.w();
+      br.sendTransform(transformStamped);
+    }
 
-    br.sendTransform(transformStamped);
+    {
+      nav_msgs::Odometry odom;
+      odom.header.stamp = ros::Time::now();
+      odom.header.frame_id = this->tf_prefix_ + "odom";
+      odom.child_frame_id = this->tf_prefix_ + robot_urdf_->getRoot()->name;
+      odom.pose.pose.position.x = m_basePose_.data.position.x;
+      odom.pose.pose.position.y = m_basePose_.data.position.y;
+      odom.pose.pose.position.z = m_basePose_.data.position.z;
+      tf2::Quaternion q;
+      q.setRPY(m_basePose_.data.orientation.r,
+               m_basePose_.data.orientation.p,
+               m_basePose_.data.orientation.y);
+      odom.pose.pose.orientation.x = q.x();
+      odom.pose.pose.orientation.y = q.y();
+      odom.pose.pose.orientation.z = q.z();
+      odom.pose.pose.orientation.w = q.w();
+      for(int i=0;i<6;i++){
+        for(int j=0;j<6;j++){
+          if(i==j) odom.pose.covariance[i*6+j] = 0.0;
+          else odom.pose.covariance[i*6+j] = 0.0;
+        }
+      }
+
+      odom.twist.twist.linear.x = 0;
+      odom.twist.twist.linear.y = 0;
+      odom.twist.twist.linear.z = 0;
+      odom.twist.twist.angular.x = 0;
+      odom.twist.twist.angular.y = 0;
+      odom.twist.twist.angular.z = 0;
+      for(int i=0;i<6;i++){
+        for(int j=0;j<6;j++){
+          if(i==j) odom.twist.covariance[i*6+j] = 0.0;
+          else odom.twist.covariance[i*6+j] = 0.0;
+        }
+      }
+
+      this->odomPub_.publish(odom);
+    }
   }
 
   if(this->m_qIn_.isNew()){

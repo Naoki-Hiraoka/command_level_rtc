@@ -25,6 +25,7 @@ protected:
   RTC::TimedPose3D m_basePose_;
   RTC::InPort<RTC::TimedPose3D> m_basePoseIn_;
   ros::Publisher jointStatePub_;
+  ros::Publisher odomPub_;
   tf2_ros::TransformBroadcaster br;
 
   std::string tf_prefix_;
